@@ -1,0 +1,95 @@
+.dataTable {
+  .dataGrid {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+
+    .MuiDataGrid-toolbarContainer {
+      flex-direction: row-reverse;
+      padding: 10px;
+    }
+
+    img {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .action {
+      display: flex;
+      gap: 15px;
+
+      img {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+
+      .delete {
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+  }
+
+  /* Responsif untuk layar lebih kecil */
+  @media (max-width: 768px) {
+    .dataGrid {
+      padding: 10px;
+
+      .MuiDataGrid-toolbarContainer {
+        flex-direction: column;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .MuiDataGrid-columnHeader {
+        font-size: 14px;
+      }
+
+      .MuiDataGrid-cell {
+        font-size: 14px;
+        padding: 5px;
+      }
+
+      img {
+        width: 28px;
+        height: 28px;
+      }
+
+      .action img {
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  /* Responsif untuk layar sangat kecil (misalnya ponsel) */
+  @media (max-width: 480px) {
+    .dataGrid {
+      padding: 5px;
+
+      .MuiDataGrid-columnHeader {
+        font-size: 12px;
+      }
+
+      .MuiDataGrid-cell {
+        font-size: 12px;
+        padding: 4px;
+      }
+
+      img {
+        width: 24px;
+        height: 24px;
+      }
+
+      .action img {
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+}
