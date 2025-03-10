@@ -11,6 +11,11 @@ type Props = {
 const DataTable = (props: Props) => {
   const handleDelete = (id: number) => {
     //delete the item
+    console.log(`Deleting item with id: ${id}`);
+    // Here you would typically make an API call to delete the item from the backend
+    // For example:
+    // await api.delete(`/items/${id}`);
+    // After deleting, you might want to refresh the data or update the state
   };
 
   const actionColumn: GridColDef = {

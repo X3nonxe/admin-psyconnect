@@ -6,7 +6,7 @@ type Props = {
   setOpen: (open: boolean) => void;
 };
 
-const Add = ({ slug, columns, setOpen }: Props) => {
+const Add = ({ setOpen }: Props) => {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
