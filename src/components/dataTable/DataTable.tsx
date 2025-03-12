@@ -11,6 +11,9 @@ type Props = {
 };
 
 const DataTable = (props: Props) => {
+  if (!props.rows) {
+    return <div>Error: Data tidak tersedia</div>;
+  }
   const handleDelete = async (id: string) => {
     if (window.confirm('Apakah Anda yakin ingin menghapus psikolog ini?')) {
       try {

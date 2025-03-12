@@ -116,32 +116,33 @@ const Psikologs = () => {
   });
 
   // Transform the API response to match the columns structure
-  const rows = data?.data.map(
-    (
-      psikolog: {
-        is_active: any;
-        id: string;
-        foto: any;
-        nama: string;
-        email: any;
-        nomor_telepon: any;
-        jenis_kelamin: any;
-        created_at: string | number | Date;
-      },
-      index: number
-    ) => ({
-      id: index + 1,
-      originalId: psikolog.id,
-      img: psikolog.foto || '/noavatar.png',
-      firstName: psikolog.nama.split(' ')[0],
-      lastName: psikolog.nama.split(' ')[1] || '',
-      email: psikolog.email,
-      phone: psikolog.nomor_telepon,
-      gender: psikolog.jenis_kelamin,
-      createdAt: new Date(psikolog.created_at).toLocaleString(),
-      verified: psikolog.is_active,
-    })
-  );
+  const rows =
+    data?.data?.map(
+      (
+        psikolog: {
+          is_active: any;
+          id: string;
+          foto: any;
+          nama: string;
+          email: any;
+          nomor_telepon: any;
+          jenis_kelamin: any;
+          created_at: string | number | Date;
+        },
+        index: number
+      ) => ({
+        id: index + 1,
+        originalId: psikolog.id,
+        img: psikolog.foto || '/noavatar.png',
+        firstName: psikolog.nama.split(' ')[0],
+        lastName: psikolog.nama.split(' ')[1] || '',
+        email: psikolog.email,
+        phone: psikolog.nomor_telepon,
+        gender: psikolog.jenis_kelamin,
+        createdAt: new Date(psikolog.created_at).toLocaleString(),
+        verified: psikolog.is_active,
+      })
+    ) || [];
 
   const handleDelete = (id: string) => {
     queryClient.setQueryData(['psikologs'], (old: any) => ({
@@ -259,7 +260,7 @@ const Psikologs = () => {
           Tambah Psikolog
         </button>
       </div>
-      {isLoading ? 'Loading...' : <DataTable slug="psikologs" columns={columns} rows={rows} onDelete={handleDelete} onEdit={handleEdit} />}
+      {isLoading ? <div className="loading-indicator">Memuat data...</div> : <DataTable slug="psikologs" columns={columns} rows={rows} onDelete={handleDelete} onEdit={handleEdit} />}
 
       {open && (
         <div className="modal">
