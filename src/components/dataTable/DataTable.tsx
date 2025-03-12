@@ -3,11 +3,11 @@ import './dataTable.scss';
 import { toast } from 'react-toastify';
 
 type Props = {
-  onEdit: (id: string) => void;
+  onEdit?: (id: string) => void;
   columns: GridColDef[];
   rows: object[];
   slug: string;
-  onDelete: (id: string) => void;
+  onDelete?: (id: string) => void;
 };
 
 const DataTable = (props: Props) => {
@@ -25,7 +25,7 @@ const DataTable = (props: Props) => {
         if (!response.ok) throw new Error('Gagal menghapus psikolog');
         console.log('Berhasil menghapus psikolog');
         toast.success('Psikolog berhasil dihapus');
-        props.onDelete(id);
+        props.onDelete && props.onDelete(id);
       } catch (error) {
         console.error('Delete error:', error);
         toast.error('Gagal menghapus psikolog');
@@ -40,7 +40,7 @@ const DataTable = (props: Props) => {
     renderCell: (params) => {
       return (
         <div className="action">
-          <div className="edit" onClick={() => props.onEdit(params.row.originalId)}>
+          <div className="edit" onClick={() => props.onEdit && props.onEdit(params.row.originalId)}>
             <img src="/view.svg" alt="Edit" />
           </div>
           <div className="delete" onClick={() => handleDelete(params.row.originalId)}>
