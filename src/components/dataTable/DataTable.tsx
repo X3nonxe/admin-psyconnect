@@ -1,35 +1,50 @@
 import { DataGrid, GridColDef, GridToolbar } from '@mui/x-data-grid';
 import './dataTable.scss';
-import { Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 type Props = {
+  onEdit: (id: string) => void;
   columns: GridColDef[];
   rows: object[];
   slug: string;
+  onDelete: (id: string) => void;
 };
 
 const DataTable = (props: Props) => {
-  const handleDelete = (id: number) => {
-    //delete the item
-    console.log(`Deleting item with id: ${id}`);
-    // Here you would typically make an API call to delete the item from the backend
-    // For example:
-    // await api.delete(`/items/${id}`);
-    // After deleting, you might want to refresh the data or update the state
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Apakah Anda yakin ingin menghapus psikolog ini?')) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`https://basic-kaleena-psyconnect-bda9a59b.koyeb.app/api/users/psikologs/${id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) throw new Error('Gagal menghapus psikolog');
+        console.log('Berhasil menghapus psikolog');
+        toast.success('Psikolog berhasil dihapus');
+        props.onDelete(id);
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast.error('Gagal menghapus psikolog');
+      }
+    }
   };
 
   const actionColumn: GridColDef = {
     field: 'action',
-    headerName: 'Action',
+    headerName: 'Aksi',
     width: 200,
     renderCell: (params) => {
       return (
         <div className="action">
-          <Link to={`/${props.slug}/${params.row.id}`}>
-            <img src="/view.svg" alt="" />
-          </Link>
-          <div className="delete" onClick={() => handleDelete(params.row.id)}>
-            <img src="/delete.svg" alt="" />
+          <div className="edit" onClick={() => props.onEdit(params.row.originalId)}>
+            <img src="/view.svg" alt="Edit" />
+          </div>
+          <div className="delete" onClick={() => handleDelete(params.row.originalId)}>
+            <img src="/delete.svg" alt="Delete" />
           </div>
         </div>
       );
