@@ -1,344 +1,669 @@
-import { GridColDef } from '@mui/x-data-grid';
-import DataTable from '../../components/dataTable/DataTable';
-import './psikologs.scss';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'react-toastify';
+import { DataGrid, GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
+import { toast, ToastContainer } from 'react-toastify';
+import './psikologs.scss';
+import { ApiResponse, Education, PaginationState, Psychologist, PsychologistFormData } from '@/src/utils/Psikolog';
+import React from 'react';
 
-// Ambil token dari localStorage atau tempat lain
-const token = localStorage.getItem('token'); // Atau tempatkan sesuai kebutuhan
+// API Service
+const API_BASE_URL = 'http://localhost:3000/api/v1';
 
-// Define columns for the DataTable
-const columns: GridColDef[] = [
-  { field: 'id', headerName: 'ID', width: 90 },
-  {
-    field: 'img',
-    headerName: 'Avatar',
-    width: 100,
-    renderCell: (params) => {
-      return <img src={params.row.img || '/noavatar.png'} alt="" />;
+const fetchPsychologists = async ({ page, limit }: PaginationState): Promise<ApiResponse> => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('Tidak ada token autentikasi');
+
+  const response = await fetch(`${API_BASE_URL}/psychologists?page=${page}&limit=${limit}`, { headers: { Authorization: `Bearer ${token}` } });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Gagal mengambil data psikolog');
+  }
+
+  const responseData = await response.json();
+
+  // Pastikan struktur response valid
+  return {
+    data: responseData.data || [],
+    total: responseData.total || 0,
+    page: responseData.page || page,
+    limit: responseData.limit || limit,
+  };
+};
+
+const fetchPsychologistById = async (id: string): Promise<Psychologist> => {
+  // Ubah return type
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('Tidak ada token autentikasi');
+
+  const response = await fetch(`${API_BASE_URL}/psychologists/${id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Gagal mengambil data psikolog');
+  }
+
+  return await response.json(); // Langsung return data tanpa properti .data
+};
+
+const createPsychologist = async (data: PsychologistFormData): Promise<any> => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('Tidak ada token autentikasi');
+
+  // Pastikan specializations selalu diformat dengan benar sebagai array string
+  const formattedData = {
+    ...data,
+    specializations: Array.isArray(data.specializations)
+      ? data.specializations.flatMap((item) =>
+          // Jika item adalah string yang berisi koma, pisahkan menjadi item terpisah
+          typeof item === 'string' && item.includes(',')
+            ? item
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : item
+        )
+      : [data.specializations].filter(Boolean),
+  };
+
+  const response = await fetch(`${API_BASE_URL}/auth/register/psychologist`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
     },
-  },
-  {
-    field: 'firstName',
-    type: 'string',
-    headerName: 'First name',
-    width: 150,
-  },
-  {
-    field: 'lastName',
-    type: 'string',
-    headerName: 'Last name',
-    width: 150,
-  },
-  {
-    field: 'email',
-    type: 'string',
-    headerName: 'Email',
-    width: 200,
-  },
-  {
-    field: 'phone',
-    type: 'string',
-    headerName: 'Phone',
-    width: 200,
-  },
-  {
-    field: 'gender',
-    type: 'string',
-    width: 150,
-  },
-  {
-    field: 'createdAt',
-    headerName: 'Created At',
-    width: 200,
-    type: 'string',
-  },
-  {
-    field: 'verified',
-    headerName: 'Verified',
-    width: 150,
-    type: 'boolean',
-  },
-];
+    body: JSON.stringify(formattedData),
+  });
 
-const Psikologs = () => {
-  const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [editMode, setEditMode] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newPsikolog, setNewPsikolog] = useState({
-    nama: '',
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('API Error response:', error);
+    throw new Error(error.message || 'Gagal menambahkan psikolog');
+  }
+  return await response.json();
+};
+
+const updatePsychologist = async (id: string, data: Partial<PsychologistFormData>): Promise<any> => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('Tidak ada token autentikasi');
+
+  // Pastikan specializations diformat dengan benar jika ada
+  const formattedData = { ...data };
+  if (data.specializations) {
+    formattedData.specializations = Array.isArray(data.specializations)
+      ? data.specializations.flatMap((item) =>
+          typeof item === 'string' && item.includes(',')
+            ? item
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : item
+        )
+      : [data.specializations].filter(Boolean);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/psychologists/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(formattedData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Gagal memperbarui psikolog');
+  }
+
+  return await response.json();
+};
+
+const deletePsychologist = async (id: string): Promise<any> => {
+  const token = localStorage.getItem('token');
+  if (!token) throw new Error('Tidak ada token autentikasi');
+
+  const response = await fetch(`${API_BASE_URL}/psychologists/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || 'Gagal menghapus psikolog');
+  }
+
+  return await response.json();
+};
+
+// Components
+const SpecializationTags = ({ specializations }: { specializations: string[] }) => (
+  <div className="specializations-container">
+    {specializations?.map((specialization, index) => (
+      <span key={index} className="specialization-tag">
+        {specialization}
+      </span>
+    ))}
+  </div>
+);
+
+const EducationList = ({ education }: { education: Education[] }) => {
+  return (
+    <div className="education-container">
+      {education?.map((edu, index) => (
+        <div key={index} className="education-item">
+          <div className="degree">{edu.degree || '-'}</div>
+          <div className="university">{edu.university || '-'}</div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const EducationForm = ({ education, setEducation }: { education: Education[]; setEducation: (education: Education[]) => void }) => {
+  const addEducation = () => {
+    setEducation([...education, { degree: '', university: '' }]);
+  };
+
+  const updateEducation = (index: number, field: keyof Education, value: string) => {
+    const newEducation = [...education];
+    newEducation[index] = { ...newEducation[index], [field]: value };
+    setEducation(newEducation);
+  };
+
+  const removeEducation = (index: number) => {
+    const newEducation = [...education];
+    newEducation.splice(index, 1);
+    setEducation(newEducation);
+  };
+
+  return (
+    <div className="form-group">
+      <label>Pendidikan</label>
+      {education.map((edu, index) => (
+        <div key={index} className="education-input-group">
+          <input placeholder="Gelar (Contoh: S1 Psikologi)" value={edu.degree} onChange={(e) => updateEducation(index, 'degree', e.target.value)} />
+          <input placeholder="Universitas (Contoh: Universitas Indonesia)" value={edu.university} onChange={(e) => updateEducation(index, 'university', e.target.value)} />
+          <button type="button" onClick={() => removeEducation(index)} className="remove-education">
+            &times;
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={addEducation} className="add-education">
+        + Tambah Pendidikan
+      </button>
+    </div>
+  );
+};
+
+const PsychologistModal = ({ isOpen, onClose, editMode, psychologistId, onSubmit }: { isOpen: boolean; onClose: () => void; editMode: boolean; psychologistId: string | null; onSubmit: (data: PsychologistFormData) => Promise<void> }) => {
+  const [formData, setFormData] = useState<PsychologistFormData>({
+    full_name: '',
     email: '',
     password: '',
-    nomor_telepon: '',
-    jenis_kelamin: 'P',
-    foto: 'default.jpg',
-    aktif: '1',
+    license_number: '',
+    specializations: [],
+    consultation_fee: 0,
+    education: [],
+    // available: true,
+    description: '',
+    address: '',
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Validasi form
+  // Fetch psychologist data if in edit mode
   useEffect(() => {
-    const newErrors: Record<string, string> = {};
-
-    if (!newPsikolog.nama.match(/^[a-zA-Z ]{3,30}$/)) {
-      newErrors.nama = 'Nama harus 3-30 karakter (huruf saja)';
-    }
-
-    if (!/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(newPsikolog.email)) {
-      newErrors.email = 'Email tidak valid';
-    }
-
-    if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(newPsikolog.password)) {
-      newErrors.password = 'Password minimal 8 karakter (huruf dan angka)';
-    }
-
-    if (!/^08[1-9][0-9]{7,10}$/.test(newPsikolog.nomor_telepon)) {
-      newErrors.nomor_telepon = 'Nomor telepon tidak valid';
-    }
-
-    setErrors(newErrors);
-  }, [newPsikolog]);
-
-  // Fetch data using React Query with token authorization
-  const { isLoading, data } = useQuery({
-    queryKey: ['psikologs'],
-    queryFn: () =>
-      fetch('https://basic-kaleena-psyconnect-bda9a59b.koyeb.app/api/users/all-psikolog', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`, // Menambahkan token ke dalam header
-        },
-      }).then((res) => res.json()),
-  });
-
-  // Transform the API response to match the columns structure
-  const rows =
-    data?.data?.map(
-      (
-        psikolog: {
-          is_active: any;
-          id: string;
-          foto: any;
-          nama: string;
-          email: any;
-          nomor_telepon: any;
-          jenis_kelamin: any;
-          created_at: string | number | Date;
-        },
-        index: number
-      ) => ({
-        id: index + 1,
-        originalId: psikolog.id,
-        img: psikolog.foto || '/noavatar.png',
-        firstName: psikolog.nama.split(' ')[0],
-        lastName: psikolog.nama.split(' ')[1] || '',
-        email: psikolog.email,
-        phone: psikolog.nomor_telepon,
-        gender: psikolog.jenis_kelamin,
-        createdAt: new Date(psikolog.created_at).toLocaleString(),
-        verified: psikolog.is_active,
-      })
-    ) || [];
-
-  const handleDelete = (id: string) => {
-    queryClient.setQueryData(['psikologs'], (old: any) => ({
-      ...old,
-      data: old.data.filter((p: any) => p.id_user !== id),
-    }));
-  };
-
-  // pages/psikologs/Psikologs.tsx
-  const handleEdit = async (id: string) => {
-    setOpen(true); // Buka modal segera
-    setEditMode(true);
-    setSelectedId(id);
-
-    try {
-      const response = await fetch(`https://basic-kaleena-psyconnect-bda9a59b.koyeb.app/api/users/profile/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const result = await response.json();
-
-      if (result.status !== 'success') {
-        throw new Error('Gagal mengambil data psikolog');
+    const loadPsychologist = async () => {
+      if (!editMode || !psychologistId) {
+        setFormData({
+          full_name: '',
+          email: '',
+          password: '',
+          license_number: '',
+          specializations: [],
+          consultation_fee: 0,
+          education: [],
+          description: '',
+          address: '',
+        });
+        return;
       }
 
-      // Sesuaikan dengan struktur response API
-      const psikologData = result.data;
-      setNewPsikolog({
-        nama: psikologData.name,
-        email: psikologData.email,
-        password: '',
-        nomor_telepon: psikologData.nomor_telepon || '',
-        jenis_kelamin: psikologData.jenis_kelamin || 'P',
-        foto: psikologData.foto || 'default.jpg',
-        aktif: psikologData.aktif ? '1' : '0',
-      });
-    } catch (error) {
-      console.error('Fetch error:', error);
-      toast.error('Gagal memuat data psikolog');
-      setOpen(false);
-      setEditMode(false);
+      setIsLoading(true);
+      try {
+        const data = await fetchPsychologistById(psychologistId);
+        console.log('Data dari API:', data); // Debugging
+
+        setFormData({
+          full_name: data.full_name || '',
+          email: data.email || '',
+          password: '',
+          license_number: data.license_number || '',
+          specializations: Array.isArray(data.specializations) ? data.specializations : [data.specializations],
+          consultation_fee: Number(data.consultation_fee) || 0,
+          education: data.education || [],
+          description: data.description || '',
+          address: data.address || '',
+        });
+      } catch (error) {
+        console.error('Gagal memuat data:', error);
+        toast.error((error as Error).message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (isOpen && editMode) {
+      // Tambahkan kondisi editMode
+      loadPsychologist();
     }
-  };
+  }, [isOpen, editMode, psychologistId]);
 
-  const handleSubmit = async () => {
-    if (Object.keys(errors).length > 0) return;
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsSubmitting(true);
+
     try {
-      const url = editMode ? `https://basic-kaleena-psyconnect-bda9a59b.koyeb.app/api/users/psikologs/${selectedId}` : 'https://basic-kaleena-psyconnect-bda9a59b.koyeb.app/api/auth/register-psychologist';
+      const dataToSubmit = {
+        ...formData,
+        consultation_fee: Number(formData.consultation_fee),
+        specializations: formData.specializations.filter(Boolean),
+      };
 
-      const method = editMode ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...newPsikolog,
-          // Jika edit mode dan password kosong, hapus field password
-          ...(editMode && !newPsikolog.password && { password: undefined }),
-        }),
-      });
-
-      if (!response.ok) throw new Error(editMode ? 'Gagal mengupdate psikolog' : 'Gagal menambahkan psikolog');
-
-      queryClient.invalidateQueries({ queryKey: ['psikologs'] });
-      toast.success(editMode ? 'Berhasil mengupdate psikolog' : 'Berhasil menambahkan psikolog');
-      setOpen(false);
-      resetForm();
+      await onSubmit(dataToSubmit);
+      onClose();
     } catch (error) {
-      console.error('Error:', error);
-      if (error instanceof Error) {
-        toast.error(error.message || 'Terjadi kesalahan');
-      } else {
-        toast.error('Terjadi kesalahan');
-      }
+      console.error('Submit error:', error);
+      toast.error((error as Error).message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const resetForm = () => {
-    setNewPsikolog({
-      nama: '',
-      email: '',
-      password: '',
-      nomor_telepon: '',
-      jenis_kelamin: 'P',
-      foto: 'default.jpg',
-      aktif: '1',
-    });
+  const handleChange = (field: keyof PsychologistFormData, value: any) => {
+    // Jika field adalah specializations dan nilai adalah string, pastikan diparse dengan benar
+    if (field === 'specializations' && typeof value === 'string') {
+      // Memisahkan berdasarkan titik koma dan memastikan setiap item adalah string terpisah
+      const specializations = value
+        .split(';')
+        .map((item) => item.trim())
+        .filter(Boolean);
+      setFormData((prev) => ({ ...prev, [field]: specializations }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="psikolog">
-      <div className="info">
-        <h1>Psikolog</h1>
-        <button
-          onClick={() => setOpen(true)}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: '#007bff',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-            fontSize: '16px',
-          }}
-        >
-          Tambah Psikolog
-        </button>
-      </div>
-      {isLoading ? <div className="loading-indicator">Memuat data...</div> : <DataTable slug="psikologs" columns={columns} rows={rows} onDelete={handleDelete} onEdit={handleEdit} />}
+    <ErrorBoundary>
+      <div className="modal">
+        <div className="modal-content">
+          <h2>{editMode ? 'Edit Psikolog' : 'Tambah Psikolog Baru'}</h2>
 
-      {open && (
-        <div className="modal">
-          <div className="modal-content">
-            <h2>{editMode ? 'Edit Psikolog' : 'Tambah Psikolog'}</h2>
-            {editMode && !newPsikolog.nama && <div className="loading-indicator">Memuat data...</div>}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSubmit();
-              }}
-            >
-              <div className="form-group">
-                <label>Nama Lengkap*</label>
-                <input type="text" value={newPsikolog.nama} onChange={(e) => setNewPsikolog({ ...newPsikolog, nama: e.target.value })} className={errors.nama ? 'error' : ''} />
-                {errors.nama && <span className="error-message">{errors.nama}</span>}
+          {isLoading ? (
+            <div className="loading">Memuat data...</div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Nama Lengkap*</label>
+                  <input value={formData.full_name} onChange={(e) => handleChange('full_name', e.target.value)} required />
+                </div>
+
+                <div className="form-group">
+                  <label>Email*</label>
+                  <input type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Password{!editMode && '*'}</label>
+                  <input type="password" value={formData.password} onChange={(e) => handleChange('password', e.target.value)} required={!editMode} />
+                  {editMode && <small>Kosongkan jika tidak ingin mengubah password</small>}
+                </div>
+
+                <div className="form-group">
+                  <label>Nomor Lisensi*</label>
+                  <input value={formData.license_number} onChange={(e) => handleChange('license_number', e.target.value)} required />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Spesialisasi*</label>
+                  <input
+                    value={Array.isArray(formData.specializations) ? formData.specializations.join(';') : ''}
+                    onChange={(e) => {
+                      // Split by semicolon and format each specialization
+                      const specializations = e.target.value
+                        .split(';')
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      handleChange('specializations', specializations);
+                    }}
+                    placeholder="Pisahkan dengan titik koma (;)"
+                    required
+                  />
+                  <small>Gunakan titik koma (;) untuk memisahkan spesialisasi</small>
+                </div>
+
+                <div className="form-group">
+                  <label>Biaya Konsultasi*</label>
+                  <input type="number" value={formData.consultation_fee} onChange={(e) => handleChange('consultation_fee', Number(e.target.value))} required min="0" step="10000" />
+                </div>
               </div>
 
               <div className="form-group">
-                <label>Email*</label>
-                <input type="email" value={newPsikolog.email} onChange={(e) => setNewPsikolog({ ...newPsikolog, email: e.target.value })} className={errors.email ? 'error' : ''} />
-                {errors.email && <span className="error-message">{errors.email}</span>}
+                <label>Deskripsi</label>
+                <textarea value={formData.description} onChange={(e) => handleChange('description', e.target.value)} rows={3} />
               </div>
 
               <div className="form-group">
-                <label>Password{!editMode && '*'}</label>
-                <input type="password" value={newPsikolog.password} onChange={(e) => setNewPsikolog({ ...newPsikolog, password: e.target.value })} className={errors.password ? 'error' : ''} required={!editMode} />
-                {errors.password && <span className="error-message">{errors.password}</span>}
-                {editMode && <small className="hint">Kosongkan jika tidak ingin mengubah password</small>}
+                <label>Alamat</label>
+                <textarea value={formData.address} onChange={(e) => handleChange('address', e.target.value)} rows={2} />
               </div>
 
-              <div className="form-group">
-                <label>Nomor Telepon*</label>
-                <input type="tel" value={newPsikolog.nomor_telepon} onChange={(e) => setNewPsikolog({ ...newPsikolog, nomor_telepon: e.target.value })} className={errors.nomor_telepon ? 'error' : ''} />
-                {errors.nomor_telepon && <span className="error-message">{errors.nomor_telepon}</span>}
-              </div>
-
-              <div className="form-group">
-                <label>Jenis Kelamin*</label>
-                <select value={newPsikolog.jenis_kelamin} onChange={(e) => setNewPsikolog({ ...newPsikolog, jenis_kelamin: e.target.value })}>
-                  <option value="P">Perempuan</option>
-                  <option value="L">Laki-laki</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Foto Profil</label>
-                <input type="text" value={newPsikolog.foto} onChange={(e) => setNewPsikolog({ ...newPsikolog, foto: e.target.value })} placeholder="Masukkan URL gambar" />
-              </div>
-
-              <div className="form-group checkbox">
-                <label>
-                  <input type="checkbox" checked={newPsikolog.aktif === '1'} onChange={(e) => setNewPsikolog({ ...newPsikolog, aktif: e.target.checked ? '1' : '0' })} />
-                  Akun Aktif
-                </label>
-              </div>
+              <EducationForm education={formData.education} setEducation={(education) => handleChange('education', education)} />
 
               <div className="form-actions">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOpen(false);
-                    resetForm();
-                  }}
-                  className="cancel-btn"
-                >
+                <button type="button" className="cancel-button" onClick={onClose} disabled={isSubmitting}>
                   Batal
                 </button>
-                <button type="submit" className="submit-btn" disabled={Object.keys(errors).length > 0 || isSubmitting}>
+                <button type="submit" className="submit-button" disabled={isSubmitting}>
                   {isSubmitting ? 'Menyimpan...' : 'Simpan'}
                 </button>
               </div>
             </form>
-          </div>
+          )}
         </div>
-      )}
+      </div>
+    </ErrorBoundary>
+  );
+};
+
+const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, isLoading }: { isOpen: boolean; onClose: () => void; onConfirm: () => void; isLoading: boolean }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal">
+      <div className="modal-content delete-confirmation">
+        <h3>Konfirmasi Penghapusan</h3>
+        <p>Apakah Anda yakin ingin menghapus psikolog ini? Tindakan ini tidak dapat dibatalkan.</p>
+
+        <div className="confirmation-buttons">
+          <button type="button" className="cancel-button" onClick={onClose} disabled={isLoading}>
+            Batal
+          </button>
+          <button type="button" className="delete-confirm-button" onClick={onConfirm} disabled={isLoading}>
+            {isLoading ? 'Menghapus...' : 'Ya, Hapus'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Psikologs;
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('Error di modal:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div className="error">Terjadi kesalahan dalam memuat form</div>;
+    }
+    return this.props.children;
+  }
+}
+
+// Main Component
+const PsychologistsPage = () => {
+  const queryClient = useQueryClient();
+  const [pagination, setPagination] = useState<PaginationState>({ page: 1, limit: 10 });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDeleteId, setSelectedDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch psychologists data
+  const { data, isLoading, error } = useQuery<ApiResponse>({
+    queryKey: ['psychologists', pagination],
+    queryFn: () => fetchPsychologists(pagination),
+    staleTime: 5000, // Adjust the stale time as needed
+  });
+
+  // Data grid columns
+  const columns: GridColDef[] = [
+    {
+      field: 'id',
+      headerName: 'ID',
+      width: 90,
+    },
+    {
+      field: 'full_name',
+      headerName: 'Nama Lengkap',
+      width: 250,
+    },
+    {
+      field: 'email',
+      headerName: 'Email',
+      width: 250,
+    },
+    {
+      field: 'license_number',
+      headerName: 'Nomor Lisensi',
+      width: 200,
+    },
+    {
+      field: 'specializations',
+      headerName: 'Spesialisasi',
+      width: 250,
+      renderCell: (params: GridRenderCellParams<Psychologist, string[]>) => <SpecializationTags specializations={params.value || []} />,
+    },
+    {
+      field: 'consultation_fee',
+      headerName: 'Biaya Konsultasi',
+      width: 180,
+      renderCell: (params: GridRenderCellParams<Psychologist>) => {
+        const fee = params.row.consultation_fee;
+        return fee != null ? `Rp${fee.toLocaleString('id-ID')}` : '-';
+      },
+    },
+    {
+      field: 'education',
+      headerName: 'Pendidikan',
+      width: 300,
+      renderCell: (params: GridRenderCellParams<Psychologist, Education[]>) => <EducationList education={params.value || []} />,
+    },
+    {
+      field: 'description',
+      headerName: 'Deskripsi',
+      width: 300,
+      renderCell: (params) => {
+        const description = params.row.description;
+        if (!description) return '-';
+        // Display full description on hover, limit display to 100 characters
+        return (
+          <div title={description} className="truncated-text">
+            {description.length > 100 ? `${description.substring(0, 100)}...` : description}
+          </div>
+        );
+      },
+    },
+    {
+      field: 'address',
+      headerName: 'Alamat',
+      width: 250,
+      renderCell: (params) => {
+        const address = params.row.address;
+        if (!address) return '-';
+        // Display full address on hover, limit display to 100 characters
+        return (
+          <div title={address} className="truncated-text">
+            {address.length > 100 ? `${address.substring(0, 100)}...` : address}
+          </div>
+        );
+      },
+    },
+    {
+      field: 'actions',
+      headerName: 'Aksi',
+      width: 150,
+      sortable: false,
+      renderCell: (params: GridRenderCellParams<Psychologist>) => (
+        <div className="action-buttons">
+          <button onClick={() => handleEdit(params.row.id)} className="edit-button">
+            Edit
+          </button>
+          <button
+            onClick={() => {
+              setSelectedDeleteId(params.row.id);
+              setDeleteModalOpen(true);
+            }}
+            className="delete-button"
+          >
+            Hapus
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  // Handlers
+  const handlePageChange = (newPage: number) => {
+    setPagination((prev) => ({ ...prev, page: newPage + 1 }));
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPagination((prev) => ({ ...prev, limit: newPageSize }));
+  };
+
+  const handleAdd = () => {
+    setEditMode(false);
+    setSelectedId(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (id: string) => {
+    setEditMode(true);
+    setSelectedId(id);
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedDeleteId) return;
+
+    setIsDeleting(true);
+    try {
+      await deletePsychologist(selectedDeleteId);
+      queryClient.invalidateQueries({ queryKey: ['psychologists'] });
+      toast.success('Psikolog berhasil dihapus');
+    } catch (error) {
+      toast.error((error as Error).message);
+    } finally {
+      setIsDeleting(false);
+      setDeleteModalOpen(false);
+      setSelectedDeleteId(null);
+    }
+  };
+
+  const handleSubmit = async (formData: PsychologistFormData) => {
+    try {
+      if (editMode && selectedId) {
+        // Remove password if empty when updating
+        const dataToUpdate = { ...formData };
+        if (!dataToUpdate.password) {
+          delete dataToUpdate.password;
+        }
+        await updatePsychologist(selectedId, dataToUpdate);
+        toast.success('Psikolog berhasil diperbarui');
+      } else {
+        await createPsychologist(formData);
+        toast.success('Psikolog berhasil ditambahkan');
+      }
+      queryClient.invalidateQueries({ queryKey: ['psychologists'] });
+    } catch (error) {
+      toast.error((error as Error).message);
+      throw error; // Rethrow to let the modal handle submission state
+    }
+  };
+
+  // Rendering
+  if (error) {
+    return <div className="error-container">Error: {(error as Error).message}</div>;
+  }
+
+  return (
+    <div className="psychologists-page">
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+      <div className="header">
+        <h1>Manajemen Psikolog</h1>
+        <button onClick={handleAdd} className="add-button">
+          + Tambah Psikolog
+        </button>
+      </div>
+
+      <div className="data-grid-container">
+        {isLoading ? (
+          <div className="loading">Memuat data...</div>
+        ) : (
+          <DataGrid
+            rows={data?.data || []}
+            columns={columns}
+            getRowHeight={() => 'auto'}
+            sx={{
+              '& .MuiDataGrid-cell': {
+                py: 1,
+              },
+              '& .MuiDataGrid-row': {
+                maxHeight: 'none !important',
+              },
+            }}
+            pagination
+            paginationMode="server"
+            rowCount={data?.total || 0}
+            paginationModel={{ pageSize: pagination.limit, page: pagination.page - 1 }}
+            onPaginationModelChange={(model) => {
+              handlePageChange(model.page);
+              handlePageSizeChange(model.pageSize);
+            }}
+            pageSizeOptions={[5, 10, 20, 50]}
+            disableRowSelectionOnClick
+            autoHeight
+            className="data-grid"
+          />
+        )}
+      </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedDeleteId(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
+      />
+      <PsychologistModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} editMode={editMode} psychologistId={selectedId} onSubmit={handleSubmit} />
+    </div>
+  );
+};
+
+export default PsychologistsPage;

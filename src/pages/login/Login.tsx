@@ -8,7 +8,7 @@ import './login.scss';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false); // State untuk loading
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -24,19 +24,27 @@ const Login = () => {
     try {
       const data = await login(email, password);
 
-      // Cek apakah data dan token tersedia
-      if (data && data.data && data.data.token) {
-        localStorage.setItem('token', data.data.token);
-        localStorage.setItem('role', data.data.role_name); // Simpan peran admin
-        localStorage.setItem('username', data.data.username); // Simpan nama pengguna
-        toast.success(data.message || 'Login berhasil!');
+      if (data && data.access_token) {
+        // Validasi role pengguna
+        if (data.user.role !== 'admin') {
+          toast.error('Akses ditolak: Anda bukan admin.');
+          setLoading(false);
+          return;
+        }
+
+        // Simpan token dan informasi pengguna jika role adalah admin
+        localStorage.setItem('token', data.access_token);
+        localStorage.setItem('role', data.user.role);
+        localStorage.setItem('email', data.user.email);
+
+        toast.success('Login berhasil!');
 
         setTimeout(() => {
           setLoading(false);
-          navigate('/'); // Redirect ke halaman utama
+          navigate('/');
         }, 1000);
       } else {
-        toast.error(data.message || 'Login gagal.');
+        toast.error('Login gagal. Periksa kembali kredensial Anda.');
         setLoading(false);
       }
     } catch (error) {
@@ -51,25 +59,11 @@ const Login = () => {
         <h2>Login Admin</h2>
         <div className="form-group">
           <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Masukkan email"
-            disabled={loading} // Nonaktifkan input saat loading
-          />
+          <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Masukkan email" disabled={loading} />
         </div>
         <div className="form-group">
           <label htmlFor="password">Kata Sandi</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Masukkan kata sandi"
-            disabled={loading} // Nonaktifkan input saat loading
-          />
+          <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Masukkan kata sandi" disabled={loading} />
         </div>
         <button type="submit" className="login-button" disabled={loading}>
           {loading ? 'Loading...' : 'Login'}

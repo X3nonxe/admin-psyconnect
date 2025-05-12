@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'https://basic-kaleena-psyconnect-bda9a59b.koyeb.app/api/auth';
+// const API_URL = 'https://basic-kaleena-psyconnect-bda9a59b.koyeb.app/api/auth';
+const API_URL = 'http://localhost:3000/api/v1/auth';
 
 // Fungsi login menggunakan axios
 export const login = async (email: string, password: string) => {

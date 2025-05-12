@@ -1,134 +1,18 @@
-// Main page layout
-.psychologists-page {
+// Specializations tags
+.specializations-container {
   display: flex;
-  flex-direction: column;
-  padding: 20px;
-  height: 100%;
+  flex-wrap: wrap;
+  gap: 4px;
 
-  .header {
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-
-    h1 {
-      margin: 0;
-      font-size: 24px;
-      color: #f5f5f5;
-    }
-
-    .add-button {
-      align-self: flex-start;
-      padding: 8px 20px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-
-      &:hover {
-        background-color: #2980b9;
-      }
-
-      &:active {
-        transform: scale(0.98);
-      }
-    }
+  .specialization-tag {
+    background-color: #e0f2f1;
+    color: #00796b;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
   }
-
-  .data-grid-container {
-    flex: 1;
-    width: 100%;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-    overflow: hidden;
-
-    .data-grid {
-      border: none;
-    }
-  }
-
-  .loading,
-  .error-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 300px;
-    width: 100%;
-    font-size: 1rem;
-    color: #666;
-  }
-
-  .error-container {
-    color: #d32f2f;
-  }
-}
-
-.delete-confirmation {
-  max-width: 400px;
-  text-align: center;
-
-  p {
-    margin: 20px 0;
-    color: #666;
-  }
-
-  .confirmation-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-    margin-top: 20px;
-
-    button {
-      padding: 8px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.3s;
-
-      &.cancel-button {
-        background-color: #f0f0f0;
-        color: #333;
-        border: 1px solid #ddd;
-
-        &:hover {
-          background-color: #e0e0e0;
-        }
-      }
-
-      &.delete-confirm-button {
-        background-color: #dc3545;
-        color: white;
-        border: none;
-
-        &:hover {
-          background-color: #c82333;
-        }
-
-        &:disabled {
-          background-color: #e8919a;
-          cursor: not-allowed;
-        }
-      }
-    }
-  }
-}
-
-/* Add these styles to your psikologs.scss file */
-
-.truncated-text {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  cursor: help; /* Shows help cursor to indicate there's more text on hover */
-}
-
-/* Optional: Style improvements for better readability */
-.data-grid .MuiDataGrid-cell {
-  padding: 8px;
-  line-height: 1.3;
 }
 
 /* For education display */
@@ -156,92 +40,6 @@
 .university {
   font-size: 0.8rem;
   color: #6c757d;
-}
-
-// Specializations tags
-.specializations-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-
-  .specialization-tag {
-    background-color: #e0f2f1;
-    color: #00796b;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    white-space: nowrap;
-  }
-}
-
-// Status badges
-.status {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-
-  &.active {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-  }
-
-  &.inactive {
-    background-color: #ffebee;
-    color: #c62828;
-  }
-}
-
-// Education display
-.education-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  .education-item {
-    .degree {
-      font-weight: 500;
-      font-size: 0.85rem;
-    }
-
-    .university {
-      font-size: 0.8rem;
-      color: #666;
-    }
-  }
-}
-
-// Action buttons
-.action-buttons {
-  display: flex;
-  gap: 8px;
-
-  button {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    cursor: pointer;
-    border: none;
-
-    &.edit-button {
-      background-color: #2196f3;
-      color: white;
-
-      &:hover {
-        background-color: #1976d2;
-      }
-    }
-
-    &.delete-button {
-      background-color: #f44336;
-      color: white;
-
-      &:hover {
-        background-color: #d32f2f;
-      }
-    }
-  }
 }
 
 // Modal styling
