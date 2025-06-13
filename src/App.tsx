@@ -34,8 +34,14 @@ const Layout = () => (
 );
 
 const router = createBrowserRouter([
+  // Rute Publik
   {
-    path: '/',
+    path: '/login',
+    element: <Login />,
+  },
+
+  // Rute Privat (Semua rute di bawah ini diproteksi)
+  {
     element: (
       <ProtectedRoute>
         <Layout />
@@ -49,10 +55,6 @@ const router = createBrowserRouter([
       { path: '/users/:id', element: <User /> },
       { path: '/products/:id', element: <Product /> },
     ],
-  },
-  {
-    path: '/login',
-    element: <Login />,
   },
 ]);
 

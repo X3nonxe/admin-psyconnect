@@ -7,7 +7,7 @@ import { ApiResponse, Education, PaginationState, Psychologist, PsychologistForm
 import React from 'react';
 
 // API Service
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = 'https://psy-backend-production.up.railway.app/api/v1';
 
 const fetchPsychologists = async ({ page, limit }: PaginationState): Promise<ApiResponse> => {
   const token = localStorage.getItem('token');

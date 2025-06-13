@@ -1,14 +1,32 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useEffect, useState } from 'react';
+import ErrorBoundary from './ErrorBoundary';
 
-interface ProtectedRouteProps {
-  children: JSX.Element;
-}
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated, role } = useAuth();
+  const [loading, setLoading] = useState(true);
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAuthenticated } = useAuth();
+  useEffect(() => {
+    console.log(`[ProtectedRoute] Auth state: authenticated=${isAuthenticated}`);
+    // Simulasi pengecekan async
+    const checkAuth = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      setLoading(false);
+    };
+    checkAuth();
+  }, []);
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  if (loading) {
+    return <div className="fullscreen-loading">Memverifikasi otentikasi...</div>;
+  }
+
+  // Tambahkan pengecekan role admin
+  if (!isAuthenticated || role !== 'admin') {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <ErrorBoundary>{children}</ErrorBoundary>;
 };
 
 export default ProtectedRoute;
